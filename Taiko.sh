@@ -57,8 +57,8 @@ if [ ! -f .env ]; then
 fi
 
 # 提示用户输入环境变量的值
-l1_endpoint_http=http://95.111.243.106:8545
-l1_endpoint_ws=ws://95.111.243.106:8546
+l1_endpoint_http=https://ethereum-holesky.blockpi.network/v1/rpc/f266d73e9a1fbc26e224c4395ac3e69b244ab5dd
+l1_endpoint_ws=wss://ethereum-holesky.blockpi.network/v1/ws/f266d73e9a1fbc26e224c4395ac3e69b244ab5dd
 enable_proposer=true
 read -p "请输入EVM钱包私钥: " l1_proposer_private_key
 
