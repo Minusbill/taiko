@@ -93,8 +93,8 @@ port_l2_execution_engine_http=${port_l2_execution_engine_http:-8547}
 read -p "请输入L2执行引擎WS端口 [默认: 8548]: " port_l2_execution_engine_ws
 port_l2_execution_engine_ws=${port_l2_execution_engine_ws:-8548}
 
-read -p "请输入L2执行引擎Metrics端口 [默认: 6060]: " port_l2_execution_engine_metrics
-port_l2_execution_engine_metrics=${port_l2_execution_engine_metrics:-6060}
+read -p "请输入L2执行引擎Metrics端口 [默认: 6061]: " port_l2_execution_engine_metrics
+port_l2_execution_engine_metrics=${port_l2_execution_engine_metrics:-6061}
 
 read -p "请输入L2执行引擎P2P端口 [默认: 30306]: " port_l2_execution_engine_p2p
 port_l2_execution_engine_p2p=${port_l2_execution_engine_p2p:-30306}
