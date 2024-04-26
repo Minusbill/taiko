@@ -96,7 +96,6 @@ function list_recommended_ports {
 }
 
 # 使用推荐端口函数为端口配置
-list_recommended_ports
 
 # 提示用户输入端口配置，允许使用默认值
 port_l2_execution_engine_http=8547
