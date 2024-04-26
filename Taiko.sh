@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# 检查是否以root用户运行脚本
+if [ "$(id -u)" != "0" ]; then
+    echo "此脚本需要以root用户权限运行。"
+    echo "请尝试使用 'sudo -i' 命令切换到root用户，然后再次运行此脚本。"
+    exit 1
+fi
+
 # 脚本保存路径
 SCRIPT_PATH="$HOME/Taiko.sh"
+
 
 # 自动设置快捷键的功能
 function check_and_set_alias() {
@@ -60,7 +68,11 @@ fi
 l1_endpoint_http=http://84.247.155.79:8545
 l1_endpoint_ws=ws://84.247.155.79:8546
 enable_proposer=true
+l1_beacon_http=https://ethereum-holesky-beacon-api.publicnode.com
+disable_p2p_sync=false
+
 read -p "请输入EVM钱包私钥: " l1_proposer_private_key
+read -p "请输入EVM钱包地址: " l2_suggested_fee_recipient
 
 # 检测并罗列未被占用的端口
 function list_recommended_ports {
@@ -93,8 +105,8 @@ port_l2_execution_engine_http=${port_l2_execution_engine_http:-8547}
 read -p "请输入L2执行引擎WS端口 [默认: 8548]: " port_l2_execution_engine_ws
 port_l2_execution_engine_ws=${port_l2_execution_engine_ws:-8548}
 
-read -p "请输入L2执行引擎Metrics端口 [默认: 6061]: " port_l2_execution_engine_metrics
-port_l2_execution_engine_metrics=${port_l2_execution_engine_metrics:-6061}
+read -p "请输入L2执行引擎Metrics端口 [默认: 6060]: " port_l2_execution_engine_metrics
+port_l2_execution_engine_metrics=${port_l2_execution_engine_metrics:-6060}
 
 read -p "请输入L2执行引擎P2P端口 [默认: 30306]: " port_l2_execution_engine_p2p
 port_l2_execution_engine_p2p=${port_l2_execution_engine_p2p:-30306}
@@ -111,8 +123,11 @@ port_grafana=${port_grafana:-3001}
 # 将用户输入的值写入.env文件
 sed -i "s|L1_ENDPOINT_HTTP=.*|L1_ENDPOINT_HTTP=${l1_endpoint_http}|" .env
 sed -i "s|L1_ENDPOINT_WS=.*|L1_ENDPOINT_WS=${l1_endpoint_ws}|" .env
+sed -i "s|L1_BEACON_HTTP=.*|L1_BEACON_HTTP=${l1_beacon_http}|" .env
 sed -i "s|ENABLE_PROPOSER=.*|ENABLE_PROPOSER=${enable_proposer}|" .env
 sed -i "s|L1_PROPOSER_PRIVATE_KEY=.*|L1_PROPOSER_PRIVATE_KEY=${l1_proposer_private_key}|" .env
+sed -i "s|L2_SUGGESTED_FEE_RECIPIENT=.*|L2_SUGGESTED_FEE_RECIPIENT=${l2_suggested_fee_recipient}|" .env
+sed -i "s|DISABLE_P2P_SYNC=.*|DISABLE_P2P_SYNC=${disable_p2p_sync}|" .env
 
 # 更新.env文件中的端口配置
 sed -i "s|PORT_L2_EXECUTION_ENGINE_HTTP=.*|PORT_L2_EXECUTION_ENGINE_HTTP=${port_l2_execution_engine_http}|" .env
@@ -122,7 +137,8 @@ sed -i "s|PORT_L2_EXECUTION_ENGINE_P2P=.*|PORT_L2_EXECUTION_ENGINE_P2P=${port_l2
 sed -i "s|PORT_PROVER_SERVER=.*|PORT_PROVER_SERVER=${port_prover_server}|" .env
 sed -i "s|PORT_PROMETHEUS=.*|PORT_PROMETHEUS=${port_prometheus}|" .env
 sed -i "s|PORT_GRAFANA=.*|PORT_GRAFANA=${port_grafana}|" .env
-sed -i "s|PROVER_ENDPOINTS=.*|PROVER_ENDPOINTS=http://taiko-a6-prover.zkpool.io|" .env
+sed -i "s|PROVER_ENDPOINTS=.*|PROVER_ENDPOINTS=http://hekla.stonemac65.xyz:9876|" .env
+sed -i "s|BLOCK_PROPOSAL_FEE=.*|BLOCK_PROPOSAL_FEE=30|" .env
 
 # 用户信息已配置完毕
 echo "用户信息已配置完毕。"
@@ -131,7 +147,7 @@ echo "用户信息已配置完毕。"
 sudo apt upgrade -y
 
 # 安装基本组件
-sudo apt install pkg-config curl build-essential libssl-dev libclang-dev ufw -y
+sudo apt install pkg-config curl build-essential libssl-dev libclang-dev ufw docker-compose-plugin -y
 
 # 检查 Docker 是否已安装
 if ! command -v docker &> /dev/null
@@ -159,25 +175,25 @@ else
     echo "Docker 已安装。"
 fi
 
-# 检查 Docker Compose 是否已安装
-if ! command -v docker-compose &> /dev/null
-then
-    echo "未检测到 Docker Compose，正在安装..."
-    sudo apt install docker-compose -y
-else
-    echo "Docker Compose 已安装。"
-fi
+    # 安装 Docker compose 最新版本
+DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+mkdir -p $DOCKER_CONFIG/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+docker compose version
 
 # 验证 Docker Engine 安装是否成功
 sudo docker run hello-world
 # 应该能看到 hello-world 程序的输出
 
-# 检查 Docker Compose 版本
-docker-compose -v
-
 # 运行 Taiko 节点
-docker compose up -d
+docker compose --profile l2_execution_engine down
+docker stop simple-taiko-node-taiko_client_proposer-1 && docker rm simple-taiko-node-taiko_client_proposer-1
+docker compose --profile l2_execution_engine up -d
 
+
+# 运行 Taiko proposer 节点
+docker compose up taiko_client_proposer -d
 # 获取公网 IP 地址
 public_ip=$(curl -s ifconfig.me)
 
@@ -195,7 +211,7 @@ echo "请通过以下链接查询设备运行情况，如果无法访问，请�
 # 查看节点日志
 function check_service_status() {
     cd simple-taiko-node
-    docker compose logs -f
+    docker compose logs -f --tail 20
 }
 
 
@@ -207,6 +223,7 @@ function main_menu() {
     echo "================================================================"
     echo "节点社区 Telegram 群组:https://t.me/niuwuriji"
     echo "节点社区 Telegram 频道:https://t.me/niuwuriji"
+    echo "节点社区 Discord 社群:https://discord.gg/GbMV5EcNWF"
     echo "请选择要执行的操作:"
     echo "1. 安装节点"
     echo "2. 查看节点日志"
