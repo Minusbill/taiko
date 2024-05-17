@@ -64,16 +64,13 @@ if [ ! -f .env ]; then
   cp .env.sample .env
 fi
 
-# 提示用户输入环境变量的值
-read -p "请输入BlockPI holesky HTTP链接: " l1_endpoint_http
+l1_endpoint_http=http://84.247.155.79:8545
+l1_endpoint_ws=ws://84.247.155.79:8546
+enable_proposer=true
+l1_beacon_http=http://unstable.holesky.beacon-api.nimbus.team
+disable_p2p_sync=false
+prover_endpoints=https://prover-hekla.taiko.tools,https://prover2-hekla.taiko.tools,http://taiko-a7-prover.zkpool.io,http://146.59.55.26:9876,http://kenz-prover.hekla.kzvn.xyz:9876,http://hekla.stonemac65.xyz:9876,http://51.91.70.42:9876,http://taiko.web3crypt.net:9876,http://148.113.17.127:9876,http://hekla.prover.taiko.coinblitz.pro:9876,http://taiko-testnet.m51nodes.xyz:9876,http://148.113.16.26:9876,http://51.161.118.103:9876,http://162.19.98.173:9876,http://49.13.215.95:9876,http://49.13.143.184:9876,http://49.13.210.192:9876,http://159.69.242.22:9876,http://49.13.69.238:9876,http://taiko.guru:9876,http://taiko.donkamote.xyz:9876
 
-read -p "请输入BlockPI holesky WS链接: " l1_endpoint_ws
-
-read -p "请输入Beacon Holskey RPC（如果你没有搭建的话，请输入:http://195.201.170.121:5052或者http://188.40.51.249:5052即可）链接: " l1_beacon_http
-
-read -p "请输入Prover RPC 链接(目前可用任意选一个:http://kenz-prover.hekla.kzvn.xyz:9876或者http://hekla.stonemac65.xyz:9876): " prover_endpoints
-
-read -p "请确认是否作为提议者（可选true或者false，目前prover 节点已经工作，请输入true，更新时间2024.4.26 15.30）: " enable_proposer
 
 read -p "请输入EVM钱包私钥,不需要带0x: " l1_proposer_private_key
 
@@ -104,26 +101,17 @@ function list_recommended_ports {
 list_recommended_ports
 
 # 提示用户输入端口配置，允许使用默认值
-read -p "请输入L2执行引擎HTTP端口 [默认: 8547]: " port_l2_execution_engine_http
-port_l2_execution_engine_http=${port_l2_execution_engine_http:-8547}
+port_l2_execution_engine_http=8547
+port_l2_execution_engine_ws=8548
 
-read -p "请输入L2执行引擎WS端口 [默认: 8548]: " port_l2_execution_engine_ws
-port_l2_execution_engine_ws=${port_l2_execution_engine_ws:-8548}
+port_l2_execution_engine_metrics=6061
+port_l2_execution_engine_p2p=30306
 
-read -p "请输入L2执行引擎Metrics端口 [默认: 6060]: " port_l2_execution_engine_metrics
-port_l2_execution_engine_metrics=${port_l2_execution_engine_metrics:-6060}
+port_prover_server=9876
 
-read -p "请输入L2执行引擎P2P端口 [默认: 30306]: " port_l2_execution_engine_p2p
-port_l2_execution_engine_p2p=${port_l2_execution_engine_p2p:-30306}
+port_prometheus=9091
 
-read -p "请输入证明者服务器端口 [默认: 9876]: " port_prover_server
-port_prover_server=${port_prover_server:-9876}
-
-read -p "请输入Prometheus端口 [默认: 9091]: " port_prometheus
-port_prometheus=${port_prometheus:-9091}
-
-read -p "请输入Grafana端口 [默认: 3001]: " port_grafana
-port_grafana=${port_grafana:-3001}
+port_grafana=3001
 
 # 将用户输入的值写入.env文件
 sed -i "s|L1_ENDPOINT_HTTP=.*|L1_ENDPOINT_HTTP=${l1_endpoint_http}|" .env
@@ -223,14 +211,17 @@ function change_option() {
 cd #HOME
 cd simple-taiko-node
 
-l1_endpoint_http=http://84.247.155.79:8545
-l1_endpoint_ws=ws://84.247.155.79:8546
-enable_proposer=true
-l1_beacon_http=http://unstable.holesky.beacon-api.nimbus.team
+read -p "请输入BlockPI holesky HTTP链接: " l1_endpoint_http
 
-disable_p2p_sync=false
+read -p "请输入BlockPI holesky WS链接: " l1_endpoint_ws
 
-prover_endpoints=https://prover-hekla.taiko.tools,https://prover2-hekla.taiko.tools,http://taiko-a7-prover.zkpool.io,http://146.59.55.26:9876,http://kenz-prover.hekla.kzvn.xyz:9876,http://hekla.stonemac65.xyz:9876,http://51.91.70.42:9876,http://taiko.web3crypt.net:9876,http://148.113.17.127:9876,http://hekla.prover.taiko.coinblitz.pro:9876,http://taiko-testnet.m51nodes.xyz:9876,http://148.113.16.26:9876,http://51.161.118.103:9876,http://162.19.98.173:9876,http://49.13.215.95:9876,http://49.13.143.184:9876,http://49.13.210.192:9876,http://159.69.242.22:9876,http://49.13.69.238:9876,http://taiko.guru:9876,http://taiko.donkamote.xyz:9876
+read -p "请输入Beacon Holskey RPC（如果你没有搭建的话，请输入:http://195.201.170.121:5052或者http://188.40.51.249:5052即可）链接: " l1_beacon_http
+
+read -p "请输入Prover RPC 链接(目前可用任意选一个:http://kenz-prover.hekla.kzvn.xyz:9876或者http://hekla.stonemac65.xyz:9876): " prover_endpoints
+
+read -p "请确认是否作为提议者（可选true或者false，目前prover 节点已经工作，请输入true，更新时间2024.4.26 15.30）: " enable_proposer
+
+read -p "请确认是否关闭P2P同步（可选true或者false，请选择false开启）: " disable_p2p_sync
 
 read -p "请输入EVM钱包私钥: " l1_proposer_private_key
 
