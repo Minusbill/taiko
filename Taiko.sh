@@ -65,13 +65,18 @@ if [ ! -f .env ]; then
 fi
 
 # 提示用户输入环境变量的值
-l1_endpoint_http=http://84.247.155.79:8545
-l1_endpoint_ws=ws://84.247.155.79:8546
-enable_proposer=true
-l1_beacon_http=https://ethereum-holesky-beacon-api.publicnode.com
-disable_p2p_sync=false
+read -p "请输入BlockPI holesky HTTP链接: " l1_endpoint_http
 
-read -p "请输入EVM钱包私钥: " l1_proposer_private_key
+read -p "请输入BlockPI holesky WS链接: " l1_endpoint_ws
+
+read -p "请输入Beacon Holskey RPC（如果你没有搭建的话，请输入:http://195.201.170.121:5052或者http://188.40.51.249:5052即可）链接: " l1_beacon_http
+
+read -p "请输入Prover RPC 链接(目前可用任意选一个:http://kenz-prover.hekla.kzvn.xyz:9876或者http://hekla.stonemac65.xyz:9876): " prover_endpoints
+
+read -p "请确认是否作为提议者（可选true或者false，目前prover 节点已经工作，请输入true，更新时间2024.4.26 15.30）: " enable_proposer
+
+read -p "请输入EVM钱包私钥,不需要带0x: " l1_proposer_private_key
+
 read -p "请输入EVM钱包地址: " l2_suggested_fee_recipient
 
 # 检测并罗列未被占用的端口
@@ -96,19 +101,30 @@ function list_recommended_ports {
 }
 
 # 使用推荐端口函数为端口配置
+list_recommended_ports
 
 # 提示用户输入端口配置，允许使用默认值
-port_l2_execution_engine_http=8547
-port_l2_execution_engine_ws=8548
-port_l2_execution_engine_metrics=6061
+read -p "请输入L2执行引擎HTTP端口 [默认: 8547]: " port_l2_execution_engine_http
+port_l2_execution_engine_http=${port_l2_execution_engine_http:-8547}
 
-port_l2_execution_engine_p2p=30306
+read -p "请输入L2执行引擎WS端口 [默认: 8548]: " port_l2_execution_engine_ws
+port_l2_execution_engine_ws=${port_l2_execution_engine_ws:-8548}
 
-port_prover_server=9876
+read -p "请输入L2执行引擎Metrics端口 [默认: 6060]: " port_l2_execution_engine_metrics
+port_l2_execution_engine_metrics=${port_l2_execution_engine_metrics:-6060}
 
-port_prometheus=9091
+read -p "请输入L2执行引擎P2P端口 [默认: 30306]: " port_l2_execution_engine_p2p
+port_l2_execution_engine_p2p=${port_l2_execution_engine_p2p:-30306}
 
-port_grafana=3001
+read -p "请输入证明者服务器端口 [默认: 9876]: " port_prover_server
+port_prover_server=${port_prover_server:-9876}
+
+read -p "请输入Prometheus端口 [默认: 9091]: " port_prometheus
+port_prometheus=${port_prometheus:-9091}
+
+read -p "请输入Grafana端口 [默认: 3001]: " port_grafana
+port_grafana=${port_grafana:-3001}
+
 # 将用户输入的值写入.env文件
 sed -i "s|L1_ENDPOINT_HTTP=.*|L1_ENDPOINT_HTTP=${l1_endpoint_http}|" .env
 sed -i "s|L1_ENDPOINT_WS=.*|L1_ENDPOINT_WS=${l1_endpoint_ws}|" .env
@@ -116,7 +132,8 @@ sed -i "s|L1_BEACON_HTTP=.*|L1_BEACON_HTTP=${l1_beacon_http}|" .env
 sed -i "s|ENABLE_PROPOSER=.*|ENABLE_PROPOSER=${enable_proposer}|" .env
 sed -i "s|L1_PROPOSER_PRIVATE_KEY=.*|L1_PROPOSER_PRIVATE_KEY=${l1_proposer_private_key}|" .env
 sed -i "s|L2_SUGGESTED_FEE_RECIPIENT=.*|L2_SUGGESTED_FEE_RECIPIENT=${l2_suggested_fee_recipient}|" .env
-sed -i "s|DISABLE_P2P_SYNC=.*|DISABLE_P2P_SYNC=${disable_p2p_sync}|" .env
+sed -i "s|PROVER_ENDPOINTS=.*|PROVER_ENDPOINTS=${prover_endpoints}|" .env
+
 
 # 更新.env文件中的端口配置
 sed -i "s|PORT_L2_EXECUTION_ENGINE_HTTP=.*|PORT_L2_EXECUTION_ENGINE_HTTP=${port_l2_execution_engine_http}|" .env
@@ -126,8 +143,8 @@ sed -i "s|PORT_L2_EXECUTION_ENGINE_P2P=.*|PORT_L2_EXECUTION_ENGINE_P2P=${port_l2
 sed -i "s|PORT_PROVER_SERVER=.*|PORT_PROVER_SERVER=${port_prover_server}|" .env
 sed -i "s|PORT_PROMETHEUS=.*|PORT_PROMETHEUS=${port_prometheus}|" .env
 sed -i "s|PORT_GRAFANA=.*|PORT_GRAFANA=${port_grafana}|" .env
-sed -i "s|PROVER_ENDPOINTS=.*|PROVER_ENDPOINTS=http://hekla.stonemac65.xyz:9876|" .env
 sed -i "s|BLOCK_PROPOSAL_FEE=.*|BLOCK_PROPOSAL_FEE=30|" .env
+sed -i "s|BOOT_NODES=.*|BOOT_NODES=enode://0b310c7dcfcf45ef32dde60fec274af88d52c7f0fb6a7e038b14f5f7bb7d72f3ab96a59328270532a871db988a0bcf57aa9258fa8a80e8e553a7bb5abd77c40d@167.235.249.45:30303,enode://500a10f3a8cfe00689eb9d41331605bf5e746625ac356c24235ff66145c2de454d869563a71efb3d2fb4bc1c1053b84d0ab6deb0a4155e7227188e1a8457b152@85.10.202.253:30303,enode://0b310c7dcfcf45ef32dde60fec274af88d52c7f0fb6a7e038b14f5f7bb7d72f3ab96a59328270532a871db988a0bcf57aa9258fa8a80e8e553a7bb5abd77c40d@167.235.249.45:30303,enode://500a10f3a8cfe00689eb9d41331605bf5e746625ac356c24235ff66145c2de454d869563a71efb3d2fb4bc1c1053b84d0ab6deb0a4155e7227188e1a8457b152@85.10.202.253:30303|" .env
 
 # 用户信息已配置完毕
 echo "用户信息已配置完毕。"
@@ -178,11 +195,8 @@ sudo docker run hello-world
 # 运行 Taiko 节点
 docker compose --profile l2_execution_engine down
 docker stop simple-taiko-node-taiko_client_proposer-1 && docker rm simple-taiko-node-taiko_client_proposer-1
-docker compose --profile l2_execution_engine up -d
+docker compose --profile proposer up -d
 
-
-# 运行 Taiko proposer 节点
-docker compose up taiko_client_proposer -d
 # 获取公网 IP 地址
 public_ip=$(curl -s ifconfig.me)
 
@@ -199,17 +213,113 @@ echo "请通过以下链接查询设备运行情况，如果无法访问，请�
 
 # 查看节点日志
 function check_service_status() {
+    cd #HOME
     cd simple-taiko-node
     docker compose logs -f --tail 20
 }
 
+# 更改常规配置
+function change_option() {
+cd #HOME
+cd simple-taiko-node
 
+l1_endpoint_http=http://84.247.155.79:8545
+l1_endpoint_ws=ws://84.247.155.79:8546
+enable_proposer=true
+l1_beacon_http=http://unstable.holesky.beacon-api.nimbus.team
+
+disable_p2p_sync=false
+
+prover_endpoints=https://prover-hekla.taiko.tools,https://prover2-hekla.taiko.tools,http://taiko-a7-prover.zkpool.io,http://146.59.55.26:9876,http://kenz-prover.hekla.kzvn.xyz:9876,http://hekla.stonemac65.xyz:9876,http://51.91.70.42:9876,http://taiko.web3crypt.net:9876,http://148.113.17.127:9876,http://hekla.prover.taiko.coinblitz.pro:9876,http://taiko-testnet.m51nodes.xyz:9876,http://148.113.16.26:9876,http://51.161.118.103:9876,http://162.19.98.173:9876,http://49.13.215.95:9876,http://49.13.143.184:9876,http://49.13.210.192:9876,http://159.69.242.22:9876,http://49.13.69.238:9876,http://taiko.guru:9876,http://taiko.donkamote.xyz:9876
+
+read -p "请输入EVM钱包私钥: " l1_proposer_private_key
+
+read -p "请输入EVM钱包地址: " l2_suggested_fee_recipient
+
+# 将用户输入的值写入.env文件
+sed -i "s|L1_ENDPOINT_HTTP=.*|L1_ENDPOINT_HTTP=${l1_endpoint_http}|" .env
+sed -i "s|L1_ENDPOINT_WS=.*|L1_ENDPOINT_WS=${l1_endpoint_ws}|" .env
+sed -i "s|L1_BEACON_HTTP=.*|L1_BEACON_HTTP=${l1_beacon_http}|" .env
+sed -i "s|ENABLE_PROPOSER=.*|ENABLE_PROPOSER=${enable_proposer}|" .env
+sed -i "s|L1_PROPOSER_PRIVATE_KEY=.*|L1_PROPOSER_PRIVATE_KEY=${l1_proposer_private_key}|" .env
+sed -i "s|L2_SUGGESTED_FEE_RECIPIENT=.*|L2_SUGGESTED_FEE_RECIPIENT=${l2_suggested_fee_recipient}|" .env
+sed -i "s|DISABLE_P2P_SYNC=.*|DISABLE_P2P_SYNC=${disable_p2p_sync}|" .env
+sed -i "s|PROVER_ENDPOINTS=.*|PROVER_ENDPOINTS=${prover_endpoints}|" .env
+
+
+docker compose --profile l2_execution_engine down
+docker stop simple-taiko-node-taiko_client_proposer-1 && docker rm simple-taiko-node-taiko_client_proposer-1
+docker compose --profile proposer up -d
+
+}
+
+function change_prover() {
+cd #HOME
+cd simple-taiko-node
+
+read -p "请输入Prover RPC 链接(目前可用任意选一个:http://kenz-prover.hekla.kzvn.xyz:9876或者http://hekla.stonemac65.xyz:9876): " prover_endpoints
+
+sed -i "s|PROVER_ENDPOINTS=.*|PROVER_ENDPOINTS=${prover_endpoints}|" .env
+
+docker compose --profile l2_execution_engine down
+docker stop simple-taiko-node-taiko_client_proposer-1 && docker rm simple-taiko-node-taiko_client_proposer-1
+
+docker compose --profile proposer up -d
+
+}
+
+# 查看节点日志
+function delete_new() {
+    cd #HOME
+    cd simple-taiko-node
+    docker compose --profile l2_execution_engine down -v
+    docker stop simple-taiko-node-taiko_client_proposer-1 && docker rm simple-taiko-node-taiko_client_proposer-1
+    cd #HOME
+    rm -rf simple-taiko-node
+}
+
+function delete_old() {
+    cd #HOME
+    cd simple-taiko-node
+    docker compose down -v
+    cd #HOME
+    rm -rf simple-taiko-node
+}
+
+function update_beacon_bootnode() {
+    cd #HOME
+    cd simple-taiko-node
+    read -p "请输入Beacon Holskey RPC（如果你没有搭建的话，请输入:http://195.201.170.121:5052或者http://188.40.51.249:5052即可）链接: " l1_beacon_http
+    sed -i "s|BOOT_NODES=.*|BOOT_NODES=enode://0b310c7dcfcf45ef32dde60fec274af88d52c7f0fb6a7e038b14f5f7bb7d72f3ab96a59328270532a871db988a0bcf57aa9258fa8a80e8e553a7bb5abd77c40d@167.235.249.45:30303,enode://500a10f3a8cfe00689eb9d41331605bf5e746625ac356c24235ff66145c2de454d869563a71efb3d2fb4bc1c1053b84d0ab6deb0a4155e7227188e1a8457b152@85.10.202.253:30303,enode://0b310c7dcfcf45ef32dde60fec274af88d52c7f0fb6a7e038b14f5f7bb7d72f3ab96a59328270532a871db988a0bcf57aa9258fa8a80e8e553a7bb5abd77c40d@167.235.249.45:30303,enode://500a10f3a8cfe00689eb9d41331605bf5e746625ac356c24235ff66145c2de454d869563a71efb3d2fb4bc1c1053b84d0ab6deb0a4155e7227188e1a8457b152@85.10.202.253:30303|" .env
+    sed -i "s|L1_BEACON_HTTP=.*|L1_BEACON_HTTP=${l1_beacon_http}|" .env
+    docker compose --profile l2_execution_engine down -v
+    docker stop simple-taiko-node-taiko_client_proposer-1 && docker rm simple-taiko-node-taiko_client_proposer-1
+    docker compose --profile proposer up -d
+}
+
+
+function change_L1RPC() {
+cd #HOME
+cd simple-taiko-node
+
+read -p "请输入BlockPI holesky HTTP链接: " l1_endpoint_http
+
+read -p "请输入BlockPI holesky WS链接: " l1_endpoint_ws
+
+sed -i "s|L1_ENDPOINT_HTTP=.*|L1_ENDPOINT_HTTP=${l1_endpoint_http}|" .env
+sed -i "s|L1_ENDPOINT_WS=.*|L1_ENDPOINT_WS=${l1_endpoint_ws}|" .env
+
+docker compose --profile l2_execution_engine down
+docker stop simple-taiko-node-taiko_client_proposer-1 && docker rm simple-taiko-node-taiko_client_proposer-1
+docker compose --profile proposer up -d
+
+}
 
 # 主菜单
 function main_menu() {
     clear
     echo "脚本以及教程由推特用户大赌哥 @y95277777 编写，免费开源，请勿相信收费"
-    echo "================================================================"
+    echo "=====================安装及常规修改功能========================="
     echo "节点社区 Telegram 群组:https://t.me/niuwuriji"
     echo "节点社区 Telegram 频道:https://t.me/niuwuriji"
     echo "节点社区 Discord 社群:https://discord.gg/GbMV5EcNWF"
@@ -217,12 +327,26 @@ function main_menu() {
     echo "1. 安装节点"
     echo "2. 查看节点日志"
     echo "3. 设置快捷键的功能"
-    read -p "请输入选项（1-3）: " OPTION
+    echo "4. 更改常规配置"
+    echo "5. 更换prover rpc"
+    echo "=======================卸载节点功能============================="
+    echo "6. 卸载新测试网节点（所有数据清除）"
+    echo "7. 卸载旧测试网节点（所有数据清除）"
+    echo "=======================常规更新功能============================="
+    echo "8. 更新Beacon rpc和加速节点"
+    echo "9. 更换L1 holesky rpc"
+    read -p "请输入选项（1-8）: " OPTION
 
     case $OPTION in
     1) install_node ;;
     2) check_service_status ;;
     3) check_and_set_alias ;; 
+    4) change_option ;; 
+    5) change_prover ;; 
+    6) delete_new ;; 
+    7) delete_old ;; 
+    8) update_beacon_bootnode ;; 
+    9) change_L1RPC ;;
     *) echo "无效选项。" ;;
     esac
 }
